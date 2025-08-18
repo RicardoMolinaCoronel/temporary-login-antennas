@@ -1,4 +1,4 @@
-const { app, BrowserWindow, BrowserView, ipcMain, shell, Menu } = require('electron')
+const { app, BrowserWindow, BrowserView, ipcMain, shell, Menu, WebContentsView } = require('electron')
 const path = require('path')
 const fs = require('fs')
 
@@ -88,6 +88,8 @@ function createMainWindow() {
       sandbox: true
     }
   })
+
+
   mainWin.setBrowserView(view)
   resizeViewBounds()
 
@@ -168,7 +170,11 @@ ipcMain.handle('navigate:to', async (_ev, antennaId) => {
 
   try {
     sessionState.currentAntenna = ant
-    await view.webContents.loadURL(ant.url, { userAgent: 'AntennaApp/1.1' })
+    //await view.webContents.loadURL(ant.url, { userAgent: 'AntennaApp/1.1' })
+    view.webContents.setUserAgent(
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
+      )
+    await view.webContents.loadURL(ant.url)
     mainWin?.webContents.send('antenna:changed', ant)
     return { ok: true }
   } catch (err) {
