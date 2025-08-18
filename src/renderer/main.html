@@ -113,8 +113,8 @@ body.mac header { padding-left: 96px; }
       const antennaId = antennaSel.value
       const res = await window.api.navigateTo(antennaId)
       if (!res.ok) {
-        //setError(res.message || 'No se pudo conectar')
-        setError('No se pudo conectar')
+        setError(res.message || 'No se pudo conectar')
+        //setError('No se pudo conectar')
         setStatus('Error de conexión')
         return
       }
