@@ -1,0 +1,19 @@
+{
+  "name": "temprary-login-antennas",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Desktop app con login y selector de antena que abre un BrowserView sin mostrar URL.",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "start:dev": "ELECTRON_START_URL=dev electron ."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+  },
+  "devDependencies": {
+    "electron": "^31.2.0"
+  }
+}

@@ -1,0 +1,13 @@
+{
+    "antennas": [
+      { "id": "a1", "name": "Antena Norte", "url": "http://10.0.0.12:8080" },
+      { "id": "a2", "name": "Antena Sur",   "url": "http://10.0.0.23:3000" },
+      { "id": "a3", "name": "Antena Este",  "url": "http://192.168.1.50" }
+    ],
+    "allowedOrigins": [
+      "http://10.0.0.12:8080",
+      "http://10.0.0.23:3000",
+      "http://192.168.1.50"
+    ]
+  }
+  
