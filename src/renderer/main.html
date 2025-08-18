@@ -7,7 +7,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     :root {
-      --header-h: 72px;
+      --header-h: 100px;
       --bg: #0f172a; --panel: #111827; --text: #e5e7eb;
       --accent: #22c55e; --muted: #94a3b8; --danger: #ef4444;
     }
@@ -20,6 +20,7 @@
       border-bottom: 1px solid rgba(255,255,255,0.08); -webkit-app-region: drag;
     }
     .row { display: flex; align-items: center; gap: 12px; }
+    .column { display: flex; flex-direction: column; align-items: start; gap: 6px; }
     header * { -webkit-app-region: no-drag; }
     img.logo { width: 70px; height: 50px; border-radius: 8px; }
     .brand { font-weight: 800; letter-spacing: .4px; }
@@ -48,7 +49,7 @@ body.mac header { padding-left: 96px; }
     </div>
     <div class="sep"></div>
 
-    <div class="row">
+    <div class="column">
       <div id="userBox" class="pill">Usuario: —</div>
       <div id="antennaBox" class="pill">Antena: —</div>
     </div>
@@ -56,7 +57,11 @@ body.mac header { padding-left: 96px; }
     <div class="sep"></div>
 
     <div class="row">
+      <div class="column">
+      <select id="locality"></select>
       <select id="antenna"></select>
+      </div>
+
       <button id="btnConnect">Conectar</button>
     </div>
 
@@ -72,6 +77,7 @@ body.mac header { padding-left: 96px; }
   <script>
     const $ = (id) => document.getElementById(id)
     const antennaSel = $('antenna'), btnConnect = $('btnConnect')
+    const localitySel = $('locality')
     const userBox = $('userBox'), antennaBox = $('antennaBox')
     const statusLine = $('statusLine'), errorLine = $('errorLine')
 
@@ -97,6 +103,14 @@ body.mac header { padding-left: 96px; }
         const opt = document.createElement('option')
         opt.value = a.id; opt.textContent = a.name
         antennaSel.appendChild(opt)
+      })
+
+      const localities = await window.api.getLocalities()
+      localitySel.innerHTML = ''
+      localities.forEach(l => {
+        const opt = document.createElement('option')
+        opt.value = l.id; opt.textContent = l.name
+        localitySel.appendChild(opt)
       })
 
       if (session.currentAntenna) {

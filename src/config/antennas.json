@@ -5,6 +5,11 @@
       { "id": "a3", "name": "Puerta 2, ANTENA RX1",  "url": "http://192.168.7.108/#/login/third" },
       { "id": "a4", "name": "Puerta 2, ANTENA RX2",  "url": "http://192.168.1.50" }
     ],
+    "localities": [
+      { "id": "l1", "name": "Boutique Stra Keneddy" },
+      { "id": "l2", "name": "Boutique Stra Mall del Sur" },
+      { "id": "l3", "name": "Boutique Stra Mall del Sol" }
+    ],
     "allowedOrigins": [
       "http://10.0.0.12:8080",
       "http://10.0.0.23:3000",

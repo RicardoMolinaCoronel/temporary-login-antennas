@@ -163,6 +163,10 @@ ipcMain.handle('app:getAntennas', async () => {
   return CONFIG.antennas
 })
 
+ipcMain.handle('app:getLocalities', async () => {
+  return CONFIG.localities
+})
+
 ipcMain.handle('navigate:to', async (_ev, antennaId) => {
   const ant = CONFIG.antennas.find(a => a.id === antennaId)
   if (!ant) return { ok: false, message: 'Antena no encontrada' }

@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('api', {
   // main window
   getSession: () => ipcRenderer.invoke('app:getSession'),
   getAntennas: () => ipcRenderer.invoke('app:getAntennas'),
+  getLocalities: () => ipcRenderer.invoke('app:getLocalities'),
   navigateTo: (antennaId) => ipcRenderer.invoke('navigate:to', antennaId),
   openExternal: (url) => ipcRenderer.send('shell:openExternal', url),
 
