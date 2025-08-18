@@ -1,27 +1,29 @@
 const { app, BrowserWindow, BrowserView, ipcMain, shell, Menu } = require('electron')
 const path = require('path')
 const fs = require('fs')
-//const contextMenu = require('electron-context-menu')
 
 const CONFIG = JSON.parse(
   fs.readFileSync(path.join(__dirname, 'config', 'antennas.json'), 'utf8')
 )
 
-let win = null
+let loginWin = null
+let mainWin = null
 let view = null
 
-const HEADER_HEIGHT = 72 // altura ocupada por el header/toolbar HTML (selector/login)
+const HEADER_HEIGHT = 72
 const IS_DEV = !!process.env.ELECTRON_START_URL
 
-function createMainWindow() {
-  win = new BrowserWindow({
-    width: 1200,
-    height: 800,
-    minWidth: 900,
-    minHeight: 600,
-    show: true,
-    autoHideMenuBar: true, // sin menú (oculta barra)
-    titleBarStyle: 'hiddenInset',
+const sessionState = {
+  user: null,             // { username, displayName }
+  currentAntenna: null    // antenna object
+}
+
+function createLoginWindow() {
+  loginWin = new BrowserWindow({
+    width: 550,
+    height: 500,
+    resizable: false,
+    autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -29,124 +31,161 @@ function createMainWindow() {
       nodeIntegration: false
     }
   })
-  Menu.setApplicationMenu(null) // sin menú app
+  Menu.setApplicationMenu(null)
+  loginWin.loadFile(path.join(__dirname, 'renderer', 'login.html'))
 
-// Desactiva menú contextual dentro del BrowserView también
-view = new BrowserView({
-    webPreferences: { contextIsolation: true, sandbox: true }
+  // Evita que la ventana navegue a sitios externos
+  loginWin.webContents.on('will-navigate', (e, url) => {
+    if (!url.startsWith('file://')) e.preventDefault()
   })
-  win.setBrowserView(view)
-  view.webContents.on('context-menu', (e) => e.preventDefault())
-  // Desactiva menú contextual o limítalo
-  /*contextMenu({
-    window: win,
-    showCopyImageAddress: false,
-    showInspectElement: IS_DEV, // Solo en dev
-    shouldShowMenu: () => IS_DEV // en prod, no mostrar
+}
+
+function createMainWindow() {
+  /*mainWin = new BrowserWindow({
+    width: 1200,
+    height: 800,
+    minWidth: 900,
+    minHeight: 600,
+    autoHideMenuBar: true,
+    titleBarStyle: 'hiddenInset',
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      sandbox: true,
+      nodeIntegration: false
+    }
   })*/
+    const isMac = process.platform === 'darwin'
+    mainWin = new BrowserWindow({
+      width: 1200,
+      height: 800,
+      minWidth: 900,
+      minHeight: 600,
+      autoHideMenuBar: true,
+      titleBarStyle: isMac ? 'hidden' : 'default', // overlay solo con hidden/hiddenInset
+      ...(isMac ? {
+        titleBarOverlay: {
+          color: '#0f172a',          // mismo color que tu header
+          symbolColor: '#e5e7eb',
+          height: HEADER_HEIGHT      // ¡que coincida con tu header!
+        },
+        trafficLightPosition: { x: 12, y: 16 } // baja un poco los botones
+      } : {}),
+      webPreferences: {
+        preload: path.join(__dirname, 'preload.js'),
+        contextIsolation: true,
+        sandbox: true,
+        nodeIntegration: false
+      }
+    })
+  Menu.setApplicationMenu(null)
+  mainWin.loadFile(path.join(__dirname, 'renderer', 'main.html'))
 
-  // Opcional: quita completamente el Application Menu
-  //Menu.setApplicationMenu(null)
-
-  // Carga la UI de login/selector
-  win.loadFile(path.join(__dirname, 'renderer', 'index.html'))
-
-  // Crea el BrowserView pero no navega aún (hasta login+selección)
+  // Crea el BrowserView (contenedor sin barra de URL)
   view = new BrowserView({
     webPreferences: {
       contextIsolation: true,
       sandbox: true
     }
   })
-  win.setBrowserView(view)
+  mainWin.setBrowserView(view)
   resizeViewBounds()
 
-  // Seguridad de navegación en el BrowserView
-  view.webContents.setWindowOpenHandler(({ url }) => {
-    // Bloquea popups nuevas; si quieres permitir abrir externas en el navegador:
-    // return { action: 'allow' } y maneja con shell.openExternal
-    return { action: 'deny' }
-  })
-
+  // Seguridad: bloquear popups y navegación a orígenes no permitidos
+  /*view.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
   view.webContents.on('will-navigate', (event, url) => {
-    if (!isAllowed(url)) {
-      event.preventDefault()
-    }
+    if (!isAllowed(url)) event.preventDefault()
+  })
+  view.webContents.on('will-redirect', (event, url) => {
+    if (!isAllowed(url)) event.preventDefault()
+  })*/
+
+
+  // Reportar errores de carga al renderer (log)
+  view.webContents.on('did-fail-load', (_ev, errorCode, errorDesc, validatedURL) => {
+    mainWin?.webContents.send('view:error', `[${errorCode}] ${errorDesc} → ${validatedURL}`)
+  })
+  view.webContents.on('did-navigate', (_ev, url) => {
+    mainWin?.webContents.send('view:status', `Navegado: ${url}`)
   })
 
-  view.webContents.on('did-attach-webview', (e) => {
-    // No usamos <webview>, así que en teoría no debiera disparar
-  })
-
-  view.webContents.on('new-window', (e, url) => {
-    e.preventDefault()
-  })
-
-  // Evita arrastrar archivos al BrowserView que cambien la navegación
-  win.webContents.on('will-navigate', (event, url) => {
-    // La ventana principal solo muestra la UI local
-    const isLocal = url.startsWith('file://')
-    if (!isLocal) event.preventDefault()
-  })
-
-  // Recalcula bounds del BrowserView al redimensionar
-  win.on('resize', resizeViewBounds)
+  mainWin.on('resize', resizeViewBounds)
+  mainWin.on('closed', () => { mainWin = null; view = null })
 }
 
 function resizeViewBounds() {
-  if (!win || !view) return
-  const [width, height] = win.getContentSize()
-  view.setBounds({ x: 0, y: HEADER_HEIGHT, width, height: height - HEADER_HEIGHT })
+  if (!mainWin || !view) return
+  const [w, h] = mainWin.getContentSize()
+  view.setBounds({ x: 0, y: HEADER_HEIGHT, width: w, height: h - HEADER_HEIGHT })
   view.setAutoResize({ width: true, height: true })
 }
 
 function isAllowed(url) {
-  // Permite navegar solo a orígenes definidos
   return CONFIG.allowedOrigins.some(origin => url.startsWith(origin))
 }
 
-// ---- IPC: autenticación y navegación ---------------------------------
+// --------- Auth & IPC ---------
 
-// DEMO: auth simple. Cambia por tu backend real (API, LDAP, OAuth, etc.)
+// DEMO auth — cámbialo por tu backend real
 function verifyCredentials({ username, password }) {
-  // Ejemplo: admin / admin123
-  return username === 'admin' && password === 'admin123'
+  // ejemplo
+  if (username === 'admin' && password === 'admin123') {
+    return { ok: true, displayName: 'Administrador' }
+  }
+  return { ok: false }
 }
 
 ipcMain.handle('auth:login', async (_ev, { username, password }) => {
-  const ok = verifyCredentials({ username, password })
-  return { ok, message: ok ? 'OK' : 'Usuario o contraseña inválidos' }
+  const res = verifyCredentials({ username, password })
+  if (!res.ok) return { ok: false, message: 'Usuario o contraseña inválidos' }
+
+  sessionState.user = { username, displayName: res.displayName || username }
+  sessionState.currentAntenna = null
+
+  // Abrir Main y cerrar Login
+  createMainWindow()
+  loginWin?.close()
+  loginWin = null
+
+  return { ok: true }
+})
+
+ipcMain.handle('app:getSession', async () => {
+  return {
+    user: sessionState.user,
+    currentAntenna: sessionState.currentAntenna
+  }
 })
 
 ipcMain.handle('app:getAntennas', async () => {
   return CONFIG.antennas
 })
 
-ipcMain.handle('navigate:to', async (_ev, url) => {
-  if (!isAllowed(url)) {
-    return { ok: false, message: 'Destino no permitido por configuración.' }
-  }
+ipcMain.handle('navigate:to', async (_ev, antennaId) => {
+  const ant = CONFIG.antennas.find(a => a.id === antennaId)
+  if (!ant) return { ok: false, message: 'Antena no encontrada' }
+  if (!isAllowed(ant.url)) return { ok: false, message: 'Destino no permitido por configuración' }
+
   try {
-    await view.webContents.loadURL(url, { userAgent: 'AntennaApp/1.0' })
+    sessionState.currentAntenna = ant
+    await view.webContents.loadURL(ant.url, { userAgent: 'AntennaApp/1.1' })
+    mainWin?.webContents.send('antenna:changed', ant)
     return { ok: true }
   } catch (err) {
     return { ok: false, message: String(err) }
   }
 })
 
-// (Opcional) abrir enlaces externos desde la UI (si los hubiera)
 ipcMain.on('shell:openExternal', (_ev, url) => {
   if (typeof url === 'string') shell.openExternal(url)
 })
 
-// ----------------------------------------------------------------------
-
-app.whenReady().then(createMainWindow)
+app.whenReady().then(createLoginWindow)
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
 })
 
 app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) createMainWindow()
+  if (!loginWin && !mainWin) createLoginWindow()
 })
