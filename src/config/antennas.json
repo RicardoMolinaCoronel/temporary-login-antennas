@@ -1,14 +1,16 @@
 {
     "antennas": [
-      { "id": "a1", "name": "Antena Norte", "url": "https://ricardomolinacoronel.tech/en" },
-      { "id": "a2", "name": "Antena Sur",   "url": "http://10.0.0.23:3000" },
-      { "id": "a3", "name": "Antena Este",  "url": "http://192.168.1.50" }
+      { "id": "a1", "name": "Puerta 1, ANTENA RX1", "url": "https://ricardomolinacoronel.tech" },
+      { "id": "a2", "name": "Puerta 1, ANTENA RX2",   "url": "http://192.168.7.108" },
+      { "id": "a3", "name": "Puerta 2, ANTENA RX1",  "url": "http://192.168.7.108/#/login/third" },
+      { "id": "a4", "name": "Puerta 2, ANTENA RX2",  "url": "http://192.168.1.50" }
     ],
     "allowedOrigins": [
       "http://10.0.0.12:8080",
       "http://10.0.0.23:3000",
       "http://192.168.1.50",
-      "https://ricardomolinacoronel.tech/en"
+      "https://ricardomolinacoronel.tech",
+      "http://192.168.7.108"
     ]
   }
   

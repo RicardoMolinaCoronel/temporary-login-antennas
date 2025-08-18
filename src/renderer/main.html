@@ -21,7 +21,7 @@
     }
     .row { display: flex; align-items: center; gap: 12px; }
     header * { -webkit-app-region: no-drag; }
-    img.logo { width: 50px; height: 50px; border-radius: 8px; }
+    img.logo { width: 70px; height: 50px; border-radius: 8px; }
     .brand { font-weight: 800; letter-spacing: .4px; }
     .sep { width: 1px; height: 28px; background: rgba(255,255,255,.12); }
     select, button {
@@ -128,7 +128,7 @@ body.mac header { padding-left: 96px; }
     btnConnect.addEventListener('click', connect)
 
     // Logs y eventos desde el BrowserView / main process
-    //window.api.onViewError(msg => setError(msg))
+    window.api.onViewError(msg => setError(msg))
     //window.api.onViewStatus(msg => setStatus(msg))
     window.api.onAntennaChanged(ant => updateHeaderAntenna(ant))
 
