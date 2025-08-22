@@ -1,9 +1,9 @@
 {
     "antennas": [
-      { "id": "a1", "name": "Puerta 1, ANTENA RX1", "url": "https://ricardomolinacoronel.tech" },
+      { "id": "a1", "name": "Puerta 1, ANTENA RX1", "url": "http://192.168.7.108" },
       { "id": "a2", "name": "Puerta 1, ANTENA RX2",   "url": "http://192.168.7.108" },
-      { "id": "a3", "name": "Puerta 2, ANTENA RX1",  "url": "http://192.168.7.108/#/login/third" },
-      { "id": "a4", "name": "Puerta 2, ANTENA RX2",  "url": "http://192.168.1.50" }
+      { "id": "a3", "name": "Puerta 2, ANTENA RX1",  "url": "http://192.168.7.108" },
+      { "id": "a4", "name": "Puerta 2, ANTENA RX2",  "url": "http://192.168.7.108" }
     ],
     "localities": [
       { "id": "l1", "name": "Boutique Stra Keneddy" },
