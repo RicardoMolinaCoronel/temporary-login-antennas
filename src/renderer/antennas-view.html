@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Estado de Antenas</title>
+  <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #0f172a; --panel: #111827; --text: #e5e7eb;
+      --accent: #22c55e; --muted: #94a3b8; --danger: #ef4444;
+      --border: rgba(255,255,255,.08);
+      --online-bg:  rgba(34,197, 94,.15); --online-text:  #4ade80;
+      --offline-bg: rgba(239, 68, 68,.15); --offline-text: #f87171;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; height: 100%; overflow: hidden;
+      background: var(--bg); color: var(--text);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial;
+    }
+
+    /* ── Top bar ── */
+    .topbar {
+      height: 60px; display: flex; align-items: center; gap: 14px;
+      padding: 0 20px;
+      background: #111827;
+      border-bottom: 1px solid var(--border);
+    }
+    .topbar-title { font-size: 16px; font-weight: 800; letter-spacing: .3px; }
+    .topbar-sub   { font-size: 12px; color: var(--muted); }
+    .spacer { flex: 1; }
+
+    /* ── Company badge in topbar ── */
+    .company-badge {
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 5px 12px;
+    }
+    .company-badge img {
+      width: 24px; height: 24px; border-radius: 5px;
+      object-fit: contain; display: none;
+    }
+    .company-badge-name { font-size: 12px; font-weight: 600; }
+
+    /* ── Toolbar ── */
+    .toolbar {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 20px;
+    }
+    .toolbar-info { font-size: 12px; color: var(--muted); }
+
+    .btn {
+      height: 32px; border-radius: 8px; border: none;
+      font-weight: 700; font-size: 12px; cursor: pointer; padding: 0 14px;
+    }
+    .btn-primary   { background: var(--accent); color: #052e12; }
+    .btn-primary:hover { background: #16a34a; }
+    .btn-secondary {
+      background: rgba(255,255,255,.07); color: var(--text);
+      border: 1px solid rgba(255,255,255,.12);
+    }
+    .btn-secondary:hover { background: rgba(255,255,255,.13); }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* ── Table ── */
+    .table-wrap {
+      height: calc(100% - 60px - 54px); /* full - topbar - toolbar */
+      overflow-y: auto;
+      padding: 0 20px 20px;
+    }
+
+    table {
+      width: 100%; border-collapse: collapse;
+      font-size: 13px;
+    }
+    thead th {
+      position: sticky; top: 0;
+      background: #0e1623;
+      text-align: left; padding: 10px 14px;
+      color: var(--muted); font-size: 11px; text-transform: uppercase;
+      letter-spacing: .6px; border-bottom: 1px solid var(--border);
+      font-weight: 600;
+    }
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background .12s;
+    }
+    tbody tr:hover { background: rgba(255,255,255,.03); }
+    tbody td { padding: 12px 14px; vertical-align: middle; }
+
+    /* Column widths */
+    .col-status   { width: 110px; }
+    .col-ip       { width: 140px; font-family: 'Courier New', monospace; color: var(--muted); font-size: 12px; }
+    .col-locality { color: var(--muted); }
+
+    /* Status badge */
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 3px 10px; border-radius: 999px;
+      font-size: 11px; font-weight: 700; letter-spacing: .4px;
+    }
+    .badge-online  { background: var(--online-bg);  color: var(--online-text);  }
+    .badge-offline { background: var(--offline-bg); color: var(--offline-text); }
+    .badge-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+    }
+    .badge-online  .badge-dot { background: var(--online-text);  box-shadow: 0 0 6px var(--online-text); }
+    .badge-offline .badge-dot { background: var(--offline-text); }
+
+    /* Loading / empty states */
+    .state-msg {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 10px;
+      padding: 60px 0; color: var(--muted); font-size: 14px; text-align: center;
+    }
+    .spinner {
+      width: 32px; height: 32px; border-radius: 50%;
+      border: 3px solid rgba(255,255,255,.1);
+      border-top-color: var(--accent);
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Auto-refresh progress bar */
+    .refresh-bar-wrap {
+      height: 3px; background: rgba(255,255,255,.06);
+    }
+    .refresh-bar {
+      height: 100%; background: var(--accent);
+      width: 100%;
+      transition: width linear;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+  <!-- Top bar -->
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">📡 Estado de Antenas</div>
+      <div class="topbar-sub">Conectividad en tiempo real</div>
+    </div>
+    <div class="spacer"></div>
+    <div class="company-badge">
+      <img id="companyLogo" alt="Logo empresa" />
+      <span id="companyName" class="company-badge-name">—</span>
+    </div>
+  </div>
+
+  <!-- Auto-refresh progress -->
+  <div class="refresh-bar-wrap">
+    <div id="refreshBar" class="refresh-bar" style="width:100%"></div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <span id="lastUpdate" class="toolbar-info">—</span>
+    <div class="spacer"></div>
+    <span id="summary" class="toolbar-info"></span>
+    <button id="btnRefresh" class="btn btn-primary">↻ Actualizar</button>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="col-status">Estado</th>
+          <th>Antena</th>
+          <th class="col-locality">Localidad</th>
+          <th class="col-ip">Dirección IP</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+    <div id="stateMsg" class="state-msg">
+      <div class="spinner"></div>
+      <span>Verificando conectividad…</span>
+    </div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id)
+
+    const tableBody  = $('tableBody')
+    const stateMsg   = $('stateMsg')
+    const btnRefresh = $('btnRefresh')
+    const lastUpdate = $('lastUpdate')
+    const summary    = $('summary')
+    const refreshBar = $('refreshBar')
+
+    const REFRESH_INTERVAL_MS = 30_000
+    let refreshTimer    = null
+    let progressTimer   = null
+    let isLoading       = false
+
+    // ── Company badge ──────────────────────────────────────────────
+    async function loadCompany() {
+      const company = await window.api.getCompany()
+      if (!company) return
+      $('companyName').textContent = company.name
+      if (company.imageDataUrl) {
+        const img = $('companyLogo')
+        img.src   = company.imageDataUrl
+        img.style.display = 'block'
+      }
+    }
+
+    // ── Fetch & render ─────────────────────────────────────────────
+    async function loadStatuses() {
+      if (isLoading) return
+      isLoading = true
+      btnRefresh.disabled = true
+      stateMsg.style.display = 'flex'
+      tableBody.innerHTML = ''
+
+      stopProgress()
+
+      try {
+        const antennas = await window.api.getAntennaStatuses()
+
+        stateMsg.style.display = 'none'
+
+        if (!antennas.length) {
+          stateMsg.innerHTML = '<span>No hay antenas configuradas para esta empresa.</span>'
+          stateMsg.style.display = 'flex'
+          return
+        }
+
+        antennas.forEach(ant => {
+          const tr = document.createElement('tr')
+          tr.innerHTML = `
+            <td>
+              <span class="badge ${ant.online ? 'badge-online' : 'badge-offline'}">
+                <span class="badge-dot"></span>
+                ${ant.online ? 'ONLINE' : 'OFFLINE'}
+              </span>
+            </td>
+            <td>${escHtml(ant.name)}</td>
+            <td class="col-locality">${escHtml(ant.locality_name)}</td>
+            <td class="col-ip">${escHtml(ant.ip)}</td>
+          `
+          tableBody.appendChild(tr)
+        })
+
+        // Summary
+        const online  = antennas.filter(a => a.online).length
+        const total   = antennas.length
+        summary.textContent = `${online} de ${total} en línea`
+
+        // Timestamp
+        const now = new Date()
+        lastUpdate.textContent = `Actualizado: ${now.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`
+
+        // Start auto-refresh countdown
+        startProgress()
+
+      } catch (err) {
+        stateMsg.innerHTML = `<span style="color:var(--danger)">Error: ${escHtml(String(err))}</span>`
+        stateMsg.style.display = 'flex'
+      } finally {
+        isLoading = false
+        btnRefresh.disabled = false
+      }
+    }
+
+    // ── Progress bar countdown ─────────────────────────────────────
+    function startProgress() {
+      stopProgress()
+      const startAt = Date.now()
+      refreshBar.style.transition = 'none'
+      refreshBar.style.width = '100%'
+
+      // Trigger reflow then animate
+      requestAnimationFrame(() => {
+        refreshBar.style.transition = `width ${REFRESH_INTERVAL_MS}ms linear`
+        refreshBar.style.width = '0%'
+      })
+
+      refreshTimer = setTimeout(() => loadStatuses(), REFRESH_INTERVAL_MS)
+    }
+
+    function stopProgress() {
+      clearTimeout(refreshTimer)
+      clearTimeout(progressTimer)
+      refreshBar.style.transition = 'none'
+      refreshBar.style.width = '100%'
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────
+    function escHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+    }
+
+    // ── Init ──────────────────────────────────────────────────────
+    btnRefresh.addEventListener('click', () => {
+      stopProgress()
+      loadStatuses()
+    })
+
+    loadCompany()
+    loadStatuses()
+  </script>
+</body>
+</html>

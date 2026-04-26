@@ -1,22 +1,26 @@
-const { app, BrowserWindow, BrowserView, ipcMain, shell, Menu, WebContentsView } = require('electron')
+const { app, BrowserWindow, BrowserView, ipcMain, shell, Menu } = require('electron')
 const path = require('path')
-const fs = require('fs')
+const fs   = require('fs')
+const net  = require('net')
 
 const CONFIG = JSON.parse(
   fs.readFileSync(path.join(__dirname, 'config', 'antennas.json'), 'utf8')
 )
 
-let loginWin = null
-let mainWin = null
-let view = null
+let loginWin      = null
+let mainWin       = null
+let view          = null
+let antennasWin   = null
 
 const HEADER_HEIGHT = 72
 const IS_DEV = !!process.env.ELECTRON_START_URL
 
 const sessionState = {
-  user: null,             // { username, displayName }
-  currentAntenna: null    // antenna object
+  user: null,          // { id, username, displayName, company_id }
+  currentAntenna: null
 }
+
+// --------- Windows ---------
 
 function createLoginWindow() {
   loginWin = new BrowserWindow({
@@ -34,54 +38,38 @@ function createLoginWindow() {
   Menu.setApplicationMenu(null)
   loginWin.loadFile(path.join(__dirname, 'renderer', 'login.html'))
 
-  // Evita que la ventana navegue a sitios externos
   loginWin.webContents.on('will-navigate', (e, url) => {
     if (!url.startsWith('file://')) e.preventDefault()
   })
 }
 
 function createMainWindow() {
-  /*mainWin = new BrowserWindow({
+  const isMac = process.platform === 'darwin'
+  mainWin = new BrowserWindow({
     width: 1200,
     height: 800,
     minWidth: 900,
     minHeight: 600,
     autoHideMenuBar: true,
-    titleBarStyle: 'hiddenInset',
+    titleBarStyle: isMac ? 'hidden' : 'default',
+    ...(isMac ? {
+      titleBarOverlay: {
+        color: '#0f172a',
+        symbolColor: '#e5e7eb',
+        height: HEADER_HEIGHT
+      },
+      trafficLightPosition: { x: 12, y: 16 }
+    } : {}),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       sandbox: true,
       nodeIntegration: false
     }
-  })*/
-    const isMac = process.platform === 'darwin'
-    mainWin = new BrowserWindow({
-      width: 1200,
-      height: 800,
-      minWidth: 900,
-      minHeight: 600,
-      autoHideMenuBar: true,
-      titleBarStyle: isMac ? 'hidden' : 'default', // overlay solo con hidden/hiddenInset
-      ...(isMac ? {
-        titleBarOverlay: {
-          color: '#0f172a',          // mismo color que tu header
-          symbolColor: '#e5e7eb',
-          height: HEADER_HEIGHT      // ¡que coincida con tu header!
-        },
-        trafficLightPosition: { x: 12, y: 16 } // baja un poco los botones
-      } : {}),
-      webPreferences: {
-        preload: path.join(__dirname, 'preload.js'),
-        contextIsolation: true,
-        sandbox: true,
-        nodeIntegration: false
-      }
-    })
+  })
   Menu.setApplicationMenu(null)
   mainWin.loadFile(path.join(__dirname, 'renderer', 'main.html'))
 
-  // Crea el BrowserView (contenedor sin barra de URL)
   view = new BrowserView({
     webPreferences: {
       contextIsolation: true,
@@ -89,21 +77,9 @@ function createMainWindow() {
     }
   })
 
-
   mainWin.setBrowserView(view)
   resizeViewBounds()
 
-  // Seguridad: bloquear popups y navegación a orígenes no permitidos
-  /*view.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
-  view.webContents.on('will-navigate', (event, url) => {
-    if (!isAllowed(url)) event.preventDefault()
-  })
-  view.webContents.on('will-redirect', (event, url) => {
-    if (!isAllowed(url)) event.preventDefault()
-  })*/
-
-
-  // Reportar errores de carga al renderer (log)
   view.webContents.on('did-fail-load', (_ev, errorCode, errorDesc, validatedURL) => {
     mainWin?.webContents.send('view:error', `[${errorCode}] ${errorDesc} → ${validatedURL}`)
   })
@@ -112,7 +88,36 @@ function createMainWindow() {
   })
 
   mainWin.on('resize', resizeViewBounds)
-  mainWin.on('closed', () => { mainWin = null; view = null })
+  mainWin.on('closed', () => {
+    antennasWin?.close()
+    antennasWin = null
+    mainWin = null
+    view = null
+  })
+}
+
+function createAntennasWindow() {
+  if (antennasWin && !antennasWin.isDestroyed()) {
+    antennasWin.focus()
+    return
+  }
+  antennasWin = new BrowserWindow({
+    width: 860,
+    height: 600,
+    minWidth: 640,
+    minHeight: 400,
+    autoHideMenuBar: true,
+    parent: mainWin,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      sandbox: true,
+      nodeIntegration: false
+    }
+  })
+  Menu.setApplicationMenu(null)
+  antennasWin.loadFile(path.join(__dirname, 'renderer', 'antennas-view.html'))
+  antennasWin.on('closed', () => { antennasWin = null })
 }
 
 function resizeViewBounds() {
@@ -126,25 +131,71 @@ function isAllowed(url) {
   return CONFIG.allowedOrigins.some(origin => url.startsWith(origin))
 }
 
-// --------- Auth & IPC ---------
+// --------- Utilities ---------
 
-// DEMO auth — cámbialo por tu backend real
+/**
+ * TCP-level reachability check. Faster than a full HTTP request and avoids
+ * auth/redirect issues. Returns true if the host:port is reachable.
+ */
+function checkAntennaOnline(antennaUrl, timeoutMs = 3000) {
+  return new Promise((resolve) => {
+    try {
+      const u     = new URL(antennaUrl)
+      const port  = u.port ? parseInt(u.port) : (u.protocol === 'https:' ? 443 : 80)
+      const host  = u.hostname
+      const sock  = new net.Socket()
+
+      sock.setTimeout(timeoutMs)
+      sock.connect(port, host, () => { sock.destroy(); resolve(true)  })
+      sock.on('timeout', ()      => { sock.destroy(); resolve(false) })
+      sock.on('error',   ()      => { sock.destroy(); resolve(false) })
+    } catch {
+      resolve(false)
+    }
+  })
+}
+
+/** Read a local image and return a base64 data-URL, or null on failure. */
+function imageToDataUrl(imagePath) {
+  try {
+    const abs  = path.resolve(__dirname, imagePath)
+    const data = fs.readFileSync(abs)
+    const ext  = path.extname(abs).slice(1).toLowerCase()
+    const mime = ext === 'png' ? 'image/png'
+               : (ext === 'jpg' || ext === 'jpeg') ? 'image/jpeg'
+               : 'image/png'
+    return `data:${mime};base64,${data.toString('base64')}`
+  } catch {
+    return null
+  }
+}
+
+// --------- Auth ---------
+
 function verifyCredentials({ username, password }) {
-  // ejemplo
-  if (username === 'admin' && password === 'admin123') {
-    return { ok: true, displayName: 'Administrador' }
+  const user = (CONFIG.users || []).find(
+    u => u.username === username && u.password === password
+  )
+  if (user) {
+    return { ok: true, userId: user.id, name: user.name, companyId: user.company_id }
   }
   return { ok: false }
 }
+
+// --------- IPC Handlers ---------
 
 ipcMain.handle('auth:login', async (_ev, { username, password }) => {
   const res = verifyCredentials({ username, password })
   if (!res.ok) return { ok: false, message: 'Usuario o contraseña inválidos' }
 
-  sessionState.user = { username, displayName: res.displayName || username }
+  sessionState.user = {
+    id:          res.userId,
+    username,
+    displayName: res.name || username,
+    company_id:  res.companyId
+  }
   sessionState.currentAntenna = null
 
-  // Abrir Main y cerrar Login
   createMainWindow()
   loginWin?.close()
   loginWin = null
@@ -152,19 +203,71 @@ ipcMain.handle('auth:login', async (_ev, { username, password }) => {
   return { ok: true }
 })
 
-ipcMain.handle('app:getSession', async () => {
+ipcMain.handle('app:getSession', async () => ({
+  user:           sessionState.user,
+  currentAntenna: sessionState.currentAntenna
+}))
+
+ipcMain.handle('app:getCompany', async () => {
+  const companyId = sessionState.user?.company_id
+  if (!companyId) return null
+
+  const company = (CONFIG.companies || []).find(c => c.id === companyId)
+  if (!company) return null
+
   return {
-    user: sessionState.user,
-    currentAntenna: sessionState.currentAntenna
+    ...company,
+    imageDataUrl: company.image_path ? imageToDataUrl(company.image_path) : null
   }
 })
 
 ipcMain.handle('app:getAntennas', async () => {
-  return CONFIG.antennas
+  const companyId = sessionState.user?.company_id
+  if (!companyId) return []
+
+  return CONFIG.antennas.filter(ant => {
+    const locality = CONFIG.localities.find(l => l.id === ant.locality_id)
+    return locality?.company_id === companyId
+  })
 })
 
 ipcMain.handle('app:getLocalities', async () => {
-  return CONFIG.localities
+  const companyId = sessionState.user?.company_id
+  if (!companyId) return []
+
+  return CONFIG.localities.filter(l => l.company_id === companyId)
+})
+
+ipcMain.handle('app:getAntennaStatuses', async () => {
+  const companyId = sessionState.user?.company_id
+  if (!companyId) return []
+
+  const companyAntennas = CONFIG.antennas.filter(ant => {
+    const locality = CONFIG.localities.find(l => l.id === ant.locality_id)
+    return locality?.company_id === companyId
+  })
+
+  const results = await Promise.all(
+    companyAntennas.map(async (ant) => {
+      const online   = await checkAntennaOnline(ant.url)
+      const locality = CONFIG.localities.find(l => l.id === ant.locality_id)
+      return {
+        id:            ant.id,
+        name:          ant.name,
+        ip:            ant.ip,
+        url:           ant.url,
+        locality_name: locality?.name || '—',
+        online
+      }
+    })
+  )
+
+  return results
+})
+
+ipcMain.handle('view:openAntennasStatus', async () => {
+  createAntennasWindow()
+  return { ok: true }
 })
 
 ipcMain.handle('navigate:to', async (_ev, antennaId) => {
@@ -174,10 +277,9 @@ ipcMain.handle('navigate:to', async (_ev, antennaId) => {
 
   try {
     sessionState.currentAntenna = ant
-    //await view.webContents.loadURL(ant.url, { userAgent: 'AntennaApp/1.1' })
     view.webContents.setUserAgent(
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
-      )
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
+    )
     await view.webContents.loadURL(ant.url)
     mainWin?.webContents.send('antenna:changed', ant)
     return { ok: true }
@@ -189,6 +291,8 @@ ipcMain.handle('navigate:to', async (_ev, antennaId) => {
 ipcMain.on('shell:openExternal', (_ev, url) => {
   if (typeof url === 'string') shell.openExternal(url)
 })
+
+// --------- App lifecycle ---------
 
 app.whenReady().then(createLoginWindow)
 
