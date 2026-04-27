@@ -31,9 +31,9 @@
   ],
   "antennas": [
     { "id": "a1", "name": "Puerta 1, ANTENA RX1", "ip": "192.168.75.108", "url": "http://192.168.75.108", "locality_id": "l1" },
-    { "id": "a2", "name": "Puerta 1, ANTENA RX2", "ip": "192.168.7.108", "url": "http://192.168.75.108", "locality_id": "l1" },
+    { "id": "a2", "name": "Puerta 1, ANTENA RX2", "ip": "192.168.7.108", "url": "http://192.168.7.108", "locality_id": "l1" },
     { "id": "a3", "name": "Puerta 2, ANTENA RX1", "ip": "192.168.7.108", "url": "http://192.168.7.108", "locality_id": "l2" },
-    { "id": "a4", "name": "Puerta 2, ANTENA RX2", "ip": "192.168.7.108", "url": "http://192.168.7.108", "locality_id": "l2" },
+    { "id": "a4", "name": "Puerta 2, ANTENA RX2", "ip": "192.168.75.108", "url": "http://192.168.75.108", "locality_id": "l2" },
     { "id": "a5", "name": "Puerta 1, ANTENA RX1", "ip": "192.168.75.108", "url": "http://192.168.75.108", "locality_id": "l5" },
     { "id": "a6", "name": "Puerta 1, ANTENA RX1", "ip": "192.168.75.108", "url": "http://192.168.75.108", "locality_id": "l6" }
 
