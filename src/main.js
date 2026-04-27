@@ -128,7 +128,15 @@ function resizeViewBounds() {
 }
 
 function isAllowed(url) {
-  return CONFIG.allowedOrigins.some(origin => url.startsWith(origin))
+  if (CONFIG.allowedOrigins.some(origin => url.startsWith(origin))) return true
+
+  // All antenna URLs are implicitly allowed
+  return CONFIG.antennas.some(ant => {
+    try {
+      const { origin } = new URL(ant.url)
+      return url.startsWith(origin)
+    } catch { return false }
+  })
 }
 
 // --------- Utilities ---------

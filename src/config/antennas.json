@@ -2,29 +2,55 @@
   "companies": [
     {
       "id": "c1",
-      "name": "Boutique Stra",
-      "image_path": "./renderer/SINPRO_LOGO.png"
+      "name": "TIENDAS INDUSTRIALES ASOCIADAS",
+      "image_path": "./assets/tia-logo.png"
+    },
+    {
+      "id": "c2",
+      "name": "ETAFASHION",
+      "image_path": "./assets/etafashion-logo.png"
+    },
+    {
+      "id": "c3",
+      "name": "RM MODA",
+      "image_path": "./assets/rm-logo.png"
+    },
+    {
+      "id": "c4",
+      "name": "ALESSA S.A",
+      "image_path": "./assets/alessa-logo.png"
     }
   ],
   "localities": [
-    { "id": "l1", "name": "Boutique Stra Kennedy",      "company_id": "c1" },
-    { "id": "l2", "name": "Boutique Stra Mall del Sur", "company_id": "c1" },
-    { "id": "l3", "name": "Boutique Stra Mall del Sol", "company_id": "c1" }
+    { "id": "l1", "name": "Concordia",      "company_id": "c1" },
+    { "id": "l2", "name": "Boutique Stra Kennedy",      "company_id": "c2" },
+    { "id": "l3", "name": "Boutique Stra Mall del Sur", "company_id": "c2" },
+    { "id": "l4", "name": "Boutique Stra Mall del Sol", "company_id": "c2" },
+    { "id": "l5", "name": "Boutique RM", "company_id": "c3" },
+    { "id": "l6", "name": "Boutique Alessa", "company_id": "c4" }
   ],
   "antennas": [
-    { "id": "a1", "name": "Puerta 1, ANTENA RX1", "ip": "192.168.7.108", "url": "http://192.168.7.108", "locality_id": "l1" },
-    { "id": "a2", "name": "Puerta 1, ANTENA RX2", "ip": "192.168.7.108", "url": "http://192.168.7.108", "locality_id": "l1" },
+    { "id": "a1", "name": "Puerta 1, ANTENA RX1", "ip": "192.168.75.108", "url": "http://192.168.75.108", "locality_id": "l1" },
+    { "id": "a2", "name": "Puerta 1, ANTENA RX2", "ip": "192.168.7.108", "url": "http://192.168.75.108", "locality_id": "l1" },
     { "id": "a3", "name": "Puerta 2, ANTENA RX1", "ip": "192.168.7.108", "url": "http://192.168.7.108", "locality_id": "l2" },
-    { "id": "a4", "name": "Puerta 2, ANTENA RX2", "ip": "192.168.7.108", "url": "http://192.168.7.108", "locality_id": "l2" }
+    { "id": "a4", "name": "Puerta 2, ANTENA RX2", "ip": "192.168.7.108", "url": "http://192.168.7.108", "locality_id": "l2" },
+    { "id": "a5", "name": "Puerta 1, ANTENA RX1", "ip": "192.168.75.108", "url": "http://192.168.75.108", "locality_id": "l5" },
+    { "id": "a6", "name": "Puerta 1, ANTENA RX1", "ip": "192.168.75.108", "url": "http://192.168.75.108", "locality_id": "l6" }
+
   ],
   "users": [
-    { "id": "u1", "username": "admin", "name": "Administrador", "company_id": "c1", "password": "admin123" }
+    { "id": "u1", "username": "dmolinatia", "name": "Duval Molina", "company_id": "c1", "password": "admin123" },
+    { "id": "u2", "username": "dmolinaeta", "name": "Duval Molina", "company_id": "c2", "password": "admin123" },
+    { "id": "u3", "username": "dmolinarm", "name": "Duval Molina", "company_id": "c3", "password": "admin123" },
+    { "id": "u4", "username": "dmolinaale", "name": "Duval Molina", "company_id": "c4", "password": "admin123" }
+
+
+
   ],
   "allowedOrigins": [
     "http://10.0.0.12:8080",
     "http://10.0.0.23:3000",
     "http://192.168.1.50",
-    "https://ricardomolinacoronel.tech",
     "http://192.168.7.108"
   ]
 }
