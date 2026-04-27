@@ -3,7 +3,8 @@ const { contextBridge, ipcRenderer } = require('electron')
 contextBridge.exposeInMainWorld('api', {
 
   // Auth
-  login: (credentials) => ipcRenderer.invoke('auth:login', credentials),
+  login:  (credentials) => ipcRenderer.invoke('auth:login',  credentials),
+  logout: ()            => ipcRenderer.invoke('auth:logout'),
 
   // Session & config
   getSession:          ()           => ipcRenderer.invoke('app:getSession'),
@@ -16,6 +17,7 @@ contextBridge.exposeInMainWorld('api', {
   navigateTo:          (antennaId)  => ipcRenderer.invoke('navigate:to', antennaId),
   openAntennasStatus:  ()           => ipcRenderer.invoke('view:openAntennasStatus'),
   openExternal:        (url)        => ipcRenderer.send('shell:openExternal', url),
+  showAppMenu:         ()           => ipcRenderer.send('menu:showAppMenu'),
 
   // Events from main process
   onViewError:         (cb) => ipcRenderer.on('view:error',      (_e, msg) => cb(msg)),

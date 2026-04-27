@@ -6,14 +6,60 @@
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
-    "start:dev": "ELECTRON_START_URL=dev electron ."
+    "start:dev": "ELECTRON_START_URL=dev electron .",
+    "build": "node scripts/build.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "dependencies": {
-  },
   "devDependencies": {
-    "electron": "^31.2.0"
+    "electron": "^31.2.0",
+    "electron-builder": "^25.1.8",
+    "electron-packager": "^17.1.2",
+    "jimp": "^1.6.1",
+    "png-to-ico": "^3.0.1"
+  },
+  "build": {
+    "appId": "com.sinpro.antenna-console",
+    "productName": "SINPRO Console",
+    "files": [
+      "src/**",
+      "!src/config/**",
+      "!src/assets/**"
+    ],
+    "extraResources": [
+      {
+        "from": "src/config",
+        "to": "config"
+      },
+      {
+        "from": "src/assets",
+        "to": "assets"
+      }
+    ],
+    "win": {
+      "sign": null,
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "SINPRO Console"
+    }
   }
 }

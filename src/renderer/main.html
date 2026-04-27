@@ -26,7 +26,6 @@
       background: #111827;
       border-bottom: 1px solid var(--border);
       -webkit-app-region: drag;
-      overflow: hidden;
     }
     header * { -webkit-app-region: no-drag; }
 
@@ -105,6 +104,17 @@
       border: 1px solid rgba(255,255,255,.12);
     }
     .btn-secondary:hover { background: rgba(255,255,255,.14); }
+    /* ── 3-dots menu button ── */
+    .btn-dots {
+      width: 26px; height: 26px; border-radius: 7px;
+      background: transparent; border: 1px solid transparent;
+      color: var(--muted); font-size: 16px; line-height: 1;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: background .12s, border-color .12s, color .12s;
+      flex-shrink: 0;
+    }
+    .btn-dots:hover { background: rgba(255,255,255,.09); border-color: var(--border); color: var(--text); }
+    .btn-dots:active { background: rgba(255,255,255,.14); }
 
     /* Spacer + status */
     .spacer { flex: 1; min-width: 0; }
@@ -123,10 +133,11 @@
 <body>
   <header>
 
-    <!-- App brand -->
+    <!-- App brand + menu trigger -->
     <div class="hd-brand">
       <img src="./SINPRO_LOGO.png" alt="Logo" />
       <span class="hd-brand-name">SINPRO Console</span>
+      <button id="menuBtn" class="btn-dots" title="Opciones">⋮</button>
     </div>
 
     <!-- Company info -->
@@ -166,22 +177,24 @@
       <div id="errorLine"  class="err"></div>
     </div>
 
+
   </header>
   <main></main>
 
   <script>
     const $ = (id) => document.getElementById(id)
 
-    const localitySel    = $('locality')
-    const antennaSel     = $('antenna')
-    const btnConnect     = $('btnConnect')
+    const localitySel     = $('locality')
+    const antennaSel      = $('antenna')
+    const btnConnect      = $('btnConnect')
     const btnAntennasView = $('btnAntennasView')
-    const userBox        = $('userBox')
-    const antennaBox     = $('antennaBox')
-    const statusLine     = $('statusLine')
-    const errorLine      = $('errorLine')
-    const companyLogo    = $('companyLogo')
-    const companyNameEl  = $('companyName')
+    const userBox         = $('userBox')
+    const antennaBox      = $('antennaBox')
+    const statusLine      = $('statusLine')
+    const errorLine       = $('errorLine')
+    const companyLogo     = $('companyLogo')
+    const companyNameEl   = $('companyName')
+    const menuBtn         = $('menuBtn')
 
     let allAntennas  = []
     let currentAntenna = null
@@ -274,6 +287,9 @@
       updateHeaderAntenna(ant)
       setStatus(`Conectado a ${ant.name}`)
     }
+
+    // ── 3-dots menu → native OS menu (bypasses BrowserView layer) ──
+    menuBtn.addEventListener('click', () => window.api.showAppMenu())
 
     btnConnect.addEventListener('click', connect)
     btnAntennasView.addEventListener('click', () => window.api.openAntennasStatus())

@@ -3,9 +3,16 @@ const path = require('path')
 const fs   = require('fs')
 const net  = require('net')
 
-const CONFIG = JSON.parse(
-  fs.readFileSync(path.join(__dirname, 'config', 'antennas.json'), 'utf8')
-)
+// En producción (empaquetado) config y assets viven en resources/ fuera del ASAR,
+// así el usuario puede editarlos sin re-empaquetar la app.
+const RESOURCES_BASE = app.isPackaged ? process.resourcesPath : __dirname
+const CONFIG_PATH    = app.isPackaged
+  ? path.join(process.resourcesPath, 'config', 'antennas.json')
+  : path.join(__dirname, 'config', 'antennas.json')
+
+const APP_ICON = path.join(__dirname, 'renderer', 'SINPRO_ONLY_LOGO.png')
+
+const CONFIG = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'))
 
 let loginWin      = null
 let mainWin       = null
@@ -28,6 +35,7 @@ function createLoginWindow() {
     height: 500,
     resizable: false,
     autoHideMenuBar: true,
+    icon: APP_ICON,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -46,11 +54,12 @@ function createLoginWindow() {
 function createMainWindow() {
   const isMac = process.platform === 'darwin'
   mainWin = new BrowserWindow({
-    width: 1200,
-    height: 800,
+    width: 1380,
+    height: 820,
     minWidth: 900,
     minHeight: 600,
     autoHideMenuBar: true,
+    icon: APP_ICON,
     titleBarStyle: isMac ? 'hidden' : 'default',
     ...(isMac ? {
       titleBarOverlay: {
@@ -107,6 +116,7 @@ function createAntennasWindow() {
     minWidth: 640,
     minHeight: 400,
     autoHideMenuBar: true,
+    icon: APP_ICON,
     parent: mainWin,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -166,7 +176,7 @@ function checkAntennaOnline(antennaUrl, timeoutMs = 3000) {
 /** Read a local image and return a base64 data-URL, or null on failure. */
 function imageToDataUrl(imagePath) {
   try {
-    const abs  = path.resolve(__dirname, imagePath)
+    const abs  = path.resolve(RESOURCES_BASE, imagePath)
     const data = fs.readFileSync(abs)
     const ext  = path.extname(abs).slice(1).toLowerCase()
     const mime = ext === 'png' ? 'image/png'
@@ -294,6 +304,36 @@ ipcMain.handle('navigate:to', async (_ev, antennaId) => {
   } catch (err) {
     return { ok: false, message: String(err) }
   }
+})
+
+function performLogout() {
+  sessionState.user           = null
+  sessionState.currentAntenna = null
+  antennasWin?.close()
+  antennasWin = null
+  createLoginWindow()
+  const toClose = mainWin
+  mainWin = null
+  view    = null
+  toClose?.close()
+}
+
+ipcMain.handle('auth:logout', async () => {
+  performLogout()
+  return { ok: true }
+})
+
+// Native OS context menu — rendered by the system, never blocked by BrowserView
+ipcMain.on('menu:showAppMenu', () => {
+  const label = sessionState.user?.displayName || sessionState.user?.username || '—'
+  const menu  = Menu.buildFromTemplate([
+    { label, enabled: false },
+    { type: 'separator' },
+    { label: '📡  Ver Estado de Antenas', click: () => createAntennasWindow() },
+    { type: 'separator' },
+    { label: '⏻  Cerrar sesión', click: () => performLogout() }
+  ])
+  menu.popup({ window: mainWin })
 })
 
 ipcMain.on('shell:openExternal', (_ev, url) => {
