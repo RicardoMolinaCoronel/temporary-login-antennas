@@ -11,6 +11,7 @@
       --bg: #0f172a; --panel: #111827; --text: #e5e7eb;
       --accent: #22c55e; --muted: #94a3b8; --danger: #ef4444;
       --border: rgba(255,255,255,.08);
+      --scroll-btn-w: 28px;
     }
     * { box-sizing: border-box; }
     html, body {
@@ -19,55 +20,84 @@
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial;
     }
 
-    /* ── Header ── */
+    /* ── Header shell (drag handle, clips inner scroll) ── */
     header {
+      position: relative;
       height: var(--header-h);
-      display: flex; align-items: center; gap: 0;
       background: #111827;
       border-bottom: 1px solid var(--border);
       -webkit-app-region: drag;
+      overflow: hidden;
     }
-    header * { -webkit-app-region: no-drag; }
 
-    /* App brand (left) */
+    /* ── Scrollable inner row (no-drag so events reach elements) ── */
+    .header-inner {
+      display: flex; align-items: center; gap: 0;
+      height: 100%;
+      overflow-x: auto; overflow-y: hidden;
+      scrollbar-width: none;
+      -webkit-app-region: no-drag;
+    }
+    .header-inner::-webkit-scrollbar { display: none; }
+
+    /* ── Scroll arrow buttons ── */
+    .hd-scroll-btn {
+      position: absolute; top: 0; bottom: 0;
+      width: var(--scroll-btn-w);
+      display: flex; align-items: center; justify-content: center;
+      border: none; cursor: pointer;
+      font-size: 15px; color: var(--text);
+      opacity: 0; pointer-events: none;
+      transition: opacity .18s;
+      z-index: 10;
+      -webkit-app-region: no-drag;
+    }
+    .hd-scroll-btn.visible { opacity: 1; pointer-events: auto; }
+    .hd-scroll-btn:hover { color: #fff; }
+
+    #hdScrollLeft  {
+      left: 0;
+      background: linear-gradient(to right, #111827 55%, transparent);
+    }
+    #hdScrollRight {
+      right: 0;
+      background: linear-gradient(to left, #111827 55%, transparent);
+    }
+
+    /* ── App brand (left) ── */
     .hd-brand {
       display: flex; align-items: center; gap: 10px;
       padding: 0 16px;
       border-right: 1px solid var(--border);
-      height: 100%;
-      flex-shrink: 0;
+      height: 100%; flex-shrink: 0;
     }
     .hd-brand img { width: 36px; height: 36px; border-radius: 8px; object-fit: cover; }
     .hd-brand-name { font-weight: 800; font-size: 14px; letter-spacing: .3px; white-space: nowrap; }
 
-    /* Company section */
+    /* ── Company section ── */
     .hd-company {
       display: flex; align-items: center; gap: 10px;
       padding: 0 16px;
       border-right: 1px solid var(--border);
-      height: 100%;
-      flex-shrink: 0;
-      min-width: 0;
+      height: 100%; flex-shrink: 0;
     }
     .hd-company-logo {
       width: 36px; height: 36px; border-radius: 8px;
       object-fit: contain;
       background: rgba(255,255,255,.06);
       border: 1px solid rgba(255,255,255,.1);
-      flex-shrink: 0;
-      display: none; /* shown after load */
+      flex-shrink: 0; display: none;
     }
-    .hd-company-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .hd-company-info { display: flex; flex-direction: column; gap: 2px; }
     .hd-company-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; }
-    .hd-company-name  { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .hd-company-name  { font-size: 13px; font-weight: 700; white-space: nowrap; }
 
-    /* User / antenna pills */
+    /* ── User / antenna pills ── */
     .hd-user {
       display: flex; flex-direction: column; gap: 4px;
       padding: 0 16px;
       border-right: 1px solid var(--border);
-      height: 100%; justify-content: center;
-      flex-shrink: 0;
+      height: 100%; justify-content: center; flex-shrink: 0;
     }
     .pill {
       padding: 2px 10px; border-radius: 999px;
@@ -75,13 +105,12 @@
       font-size: 11px; white-space: nowrap;
     }
 
-    /* Controls */
+    /* ── Controls ── */
     .hd-controls {
       display: flex; align-items: center; gap: 8px;
       padding: 0 14px;
       border-right: 1px solid var(--border);
-      height: 100%;
-      flex-shrink: 0;
+      height: 100%; flex-shrink: 0;
     }
     .hd-col { display: flex; flex-direction: column; gap: 5px; }
 
@@ -91,7 +120,7 @@
       outline: none; font-size: 12px; cursor: pointer;
     }
 
-    /* Buttons */
+    /* ── Buttons ── */
     .btn {
       height: 32px; border-radius: 8px; border: none;
       font-weight: 700; font-size: 12px; cursor: pointer;
@@ -104,6 +133,7 @@
       border: 1px solid rgba(255,255,255,.12);
     }
     .btn-secondary:hover { background: rgba(255,255,255,.14); }
+
     /* ── 3-dots menu button ── */
     .btn-dots {
       width: 26px; height: 26px; border-radius: 7px;
@@ -113,70 +143,80 @@
       transition: background .12s, border-color .12s, color .12s;
       flex-shrink: 0;
     }
-    .btn-dots:hover { background: rgba(255,255,255,.09); border-color: var(--border); color: var(--text); }
+    .btn-dots:hover  { background: rgba(255,255,255,.09); border-color: var(--border); color: var(--text); }
     .btn-dots:active { background: rgba(255,255,255,.14); }
 
-    /* Spacer + status */
-    .spacer { flex: 1; min-width: 0; }
+    /* ── Spacer + status ── */
+    .spacer { flex: 1; min-width: 24px; flex-shrink: 0; }
     .hd-status {
       display: flex; flex-direction: column; gap: 2px;
       font-size: 11px; color: var(--muted); padding: 0 16px;
-      min-width: 220px; max-width: 320px; flex-shrink: 0;
+      min-width: 200px; flex-shrink: 0;
     }
     .err { color: var(--danger); }
 
     main { height: calc(100% - var(--header-h)); }
 
-    body.mac header { padding-left: 80px; }
+    body.mac .header-inner { padding-left: 80px; }
   </style>
 </head>
 <body>
   <header>
 
-    <!-- App brand + menu trigger -->
-    <div class="hd-brand">
-      <img src="./SINPRO_LOGO.png" alt="Logo" />
-      <span class="hd-brand-name">SINPRO Console</span>
-      <button id="menuBtn" class="btn-dots" title="Opciones">⋮</button>
-    </div>
+    <!-- Left scroll arrow -->
+    <button id="hdScrollLeft" class="hd-scroll-btn" aria-label="Desplazar izquierda">‹</button>
 
-    <!-- Company info -->
-    <div class="hd-company">
-      <img id="companyLogo" class="hd-company-logo" alt="Company" />
-      <div class="hd-company-info">
-        <span class="hd-company-label">Empresa</span>
-        <span id="companyName" class="hd-company-name">—</span>
+    <!-- Scrollable content row -->
+    <div id="headerInner" class="header-inner">
+
+      <!-- App brand + menu trigger -->
+      <div class="hd-brand">
+        <img src="./SINPRO_LOGO.png" alt="Logo" />
+        <span class="hd-brand-name">SINPRO Console</span>
+        <button id="menuBtn" class="btn-dots" title="Opciones">⋮</button>
       </div>
-    </div>
 
-    <!-- User / current antenna -->
-    <div class="hd-user">
-      <div id="userBox"    class="pill">Usuario: —</div>
-      <div id="antennaBox" class="pill">Antena: —</div>
-    </div>
-
-    <!-- Selects + connect -->
-    <div class="hd-controls">
-      <div class="hd-col">
-        <select id="locality" title="Localidad"></select>
-        <select id="antenna"  title="Antena"></select>
+      <!-- Company info -->
+      <div class="hd-company">
+        <img id="companyLogo" class="hd-company-logo" alt="Company" />
+        <div class="hd-company-info">
+          <span class="hd-company-label">Empresa</span>
+          <span id="companyName" class="hd-company-name">—</span>
+        </div>
       </div>
-      <button id="btnConnect" class="btn btn-primary">Conectar</button>
-    </div>
 
-    <div class="spacer"></div>
+      <!-- User / current antenna -->
+      <div class="hd-user">
+        <div id="userBox"    class="pill">Usuario: —</div>
+        <div id="antennaBox" class="pill">Antena: —</div>
+      </div>
 
-    <!-- Antennas status button -->
-    <button id="btnAntennasView" class="btn btn-secondary" style="margin-right:12px;">
-      📡 Ver Antenas
-    </button>
+      <!-- Selects + connect -->
+      <div class="hd-controls">
+        <div class="hd-col">
+          <select id="locality" title="Localidad"></select>
+          <select id="antenna"  title="Antena"></select>
+        </div>
+        <button id="btnConnect" class="btn btn-primary">Conectar</button>
+      </div>
 
-    <!-- Status messages -->
-    <div class="hd-status">
-      <div id="statusLine">Estado: esperando selección…</div>
-      <div id="errorLine"  class="err"></div>
-    </div>
+      <div class="spacer"></div>
 
+      <!-- Antennas status button -->
+      <button id="btnAntennasView" class="btn btn-secondary" style="margin-right:12px;">
+        📡 Ver Antenas
+      </button>
+
+      <!-- Status messages -->
+      <div class="hd-status">
+        <div id="statusLine">Estado: esperando selección…</div>
+        <div id="errorLine"  class="err"></div>
+      </div>
+
+    </div><!-- /.header-inner -->
+
+    <!-- Right scroll arrow -->
+    <button id="hdScrollRight" class="hd-scroll-btn" aria-label="Desplazar derecha">›</button>
 
   </header>
   <main></main>
@@ -196,7 +236,11 @@
     const companyNameEl   = $('companyName')
     const menuBtn         = $('menuBtn')
 
-    let allAntennas  = []
+    const headerInner   = $('headerInner')
+    const hdScrollLeft  = $('hdScrollLeft')
+    const hdScrollRight = $('hdScrollRight')
+
+    let allAntennas    = []
     let currentAntenna = null
 
     function setStatus(msg) { statusLine.textContent = `Estado: ${msg}` }
@@ -209,6 +253,20 @@
       antennaBox.textContent = `Antena: ${ant?.name || '—'}`
     }
 
+    // ── Header scroll arrows ──────────────────────────────────────────────
+    function syncScrollBtns() {
+      const { scrollLeft, scrollWidth, clientWidth } = headerInner
+      hdScrollLeft.classList.toggle('visible',  scrollLeft > 2)
+      hdScrollRight.classList.toggle('visible', scrollLeft + clientWidth < scrollWidth - 2)
+    }
+
+    headerInner.addEventListener('scroll', syncScrollBtns)
+    window.addEventListener('resize', syncScrollBtns)
+
+    hdScrollLeft.addEventListener('click',  () => headerInner.scrollBy({ left: -220, behavior: 'smooth' }))
+    hdScrollRight.addEventListener('click', () => headerInner.scrollBy({ left:  220, behavior: 'smooth' }))
+
+    // ── Antenna filter ────────────────────────────────────────────────────
     function buildAntennasForLocality(localityId) {
       const filtered = allAntennas.filter(a => a.locality_id === localityId)
       antennaSel.innerHTML = ''
@@ -220,12 +278,11 @@
       })
     }
 
+    // ── Init ──────────────────────────────────────────────────────────────
     async function init() {
-      // Session
       const session = await window.api.getSession()
       updateHeaderUser(session.user)
 
-      // Company
       const company = await window.api.getCompany()
       if (company) {
         companyNameEl.textContent = company.name
@@ -235,7 +292,6 @@
         }
       }
 
-      // Localities
       const localities = await window.api.getLocalities()
       localitySel.innerHTML = ''
       localities.forEach(l => {
@@ -245,18 +301,12 @@
         localitySel.appendChild(opt)
       })
 
-      // Antennas (all for this company, renderer filters by locality)
       allAntennas = await window.api.getAntennas()
 
-      if (localities.length > 0) {
-        buildAntennasForLocality(localities[0].id)
-      }
+      if (localities.length > 0) buildAntennasForLocality(localities[0].id)
 
-      localitySel.addEventListener('change', () => {
-        buildAntennasForLocality(localitySel.value)
-      })
+      localitySel.addEventListener('change', () => buildAntennasForLocality(localitySel.value))
 
-      // Restore current antenna selection
       if (session.currentAntenna) {
         currentAntenna = session.currentAntenna
         const ant = allAntennas.find(a => a.id === session.currentAntenna.id)
@@ -269,9 +319,14 @@
       }
 
       setStatus('Listo')
+      // Check scroll arrows after content is fully loaded
+      requestAnimationFrame(syncScrollBtns)
     }
 
-    async function connect() {
+    // ── 3-dots menu → native OS menu ─────────────────────────────────────
+    menuBtn.addEventListener('click', () => window.api.showAppMenu())
+
+    btnConnect.addEventListener('click', async () => {
       setError('')
       setStatus('Conectando…')
       const antennaId = antennaSel.value
@@ -286,12 +341,8 @@
       currentAntenna = ant
       updateHeaderAntenna(ant)
       setStatus(`Conectado a ${ant.name}`)
-    }
+    })
 
-    // ── 3-dots menu → native OS menu (bypasses BrowserView layer) ──
-    menuBtn.addEventListener('click', () => window.api.showAppMenu())
-
-    btnConnect.addEventListener('click', connect)
     btnAntennasView.addEventListener('click', () => window.api.openAntennasStatus())
 
     window.api.onViewError(msg => setError(msg))
